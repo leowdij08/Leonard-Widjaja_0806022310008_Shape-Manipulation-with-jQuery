@@ -1,0 +1,184 @@
+<!DOCTYPE html> <!-- Deklarasi tipe dokumen HTML -->
+<html lang="en"> <!-- Tag pembuka untuk dokumen HTML dengan bahasa Inggris -->
+<head> <!-- Bagian kepala dokumen -->
+    <meta charset="UTF-8"> <!-- Penentuan set karakter UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Konfigurasi tampilan responsif -->
+    <title>Shape Manipulation</title> <!-- Judul dokumen -->
+    <style>
+        .shapeContainerWrapper { /* Gaya untuk wrapper kontainer bentuk */
+            padding: 20px; /* Padding 20px di sekitar kontainer */
+            display: flex; /* Menampilkan elemen sebagai flexbox */
+            justify-content: center; /* Mengatur konten ke tengah secara horizontal */
+        }
+        .shapeContainer { /* Gaya untuk kontainer bentuk */
+            width: 80%; /* Lebar 80% dari elemen induk */
+            height: 400px; /* Tinggi 400px */
+            border: 1px solid #000; /* Garis border 1px berwarna hitam */
+            position: relative; /* Posisi relatif untuk elemen anak */
+            overflow: hidden; /* Sembunyikan konten yang meluap */
+            padding: 5px; /* Padding 5px di sekitar kontainer */
+        }
+        .controls { /* Gaya untuk kontrol */
+            margin: 20px; /* Margin 20px di sekitar elemen */
+            text-align: center; /* Teks rata tengah */
+        }
+        .shapeControls { /* Gaya untuk kontrol bentuk */
+            margin: 20px; /* Margin 20px di sekitar elemen */
+            text-align: center; /* Teks rata tengah */
+        }
+        .shape { /* Gaya untuk bentuk */
+            position: absolute; /* Posisi absolut untuk elemen */
+            display: none; /* Sembunyikan elemen secara default */
+        }
+        .circle { /* Gaya untuk bentuk lingkaran */
+            border-radius: 50%; /* Membuat bentuk lingkaran dengan border-radius */
+        }
+        .triangle { /* Gaya untuk bentuk segitiga */
+            width: 0; /* Lebar 0 */
+            height: 0; /* Tinggi 0 */
+            border-left: 25px solid transparent; /* Border kiri transparan */
+            border-right: 25px solid transparent; /* Border kanan transparan */
+            border-bottom: 50px solid; /* Border bawah berwarna */
+            position: absolute; /* Posisi absolut untuk elemen */
+        }
+        /* Tombol dengan warna hijau */
+        #addShapeBtn,
+        #removeShapeBtn {
+            background-color: #4CAF50; /* Warna hijau */
+            color: white; /* Warna teks putih */
+            border: none; /* Tidak ada border */
+            padding: 10px 20px; /* Padding */
+            text-align: center; /* Pusatkan teks */
+            text-decoration: none; /* Tidak ada dekorasi teks */
+            display: inline-block; /* Menampilkan elemen sebagai blok sebaris */
+            font-size: 16px; /* Ukuran font 16px */
+            margin: 4px 2px; /* Margin */
+            cursor: pointer; /* Mengubah kursor menjadi pointer */
+            border-radius: 5px; /* Sudut border melengkung 5px */
+            transition: background-color 0.3s; /* Transisi perubahan warna latar belakang */
+        }
+
+        /* Efek hover */
+        #addShapeBtn:hover,
+        #removeShapeBtn:hover {
+            background-color: #45a049; /* Warna hijau yang lebih gelap saat dihover */
+        }
+
+        /* Ubah warna tombol menjadi abu-abu saat diklik */
+        #addShapeBtn:active,
+        #removeShapeBtn:active {
+            background-color: #cccccc; /* Warna abu-abu saat diklik */
+        }
+    </style>
+</head>
+<body>
+<div class="shapeContainerWrapper"> <!-- Wrapper untuk kontainer bentuk -->
+    <div class="shapeContainer" id="shapeContainer"></div> <!-- Kontainer untuk bentuk -->
+</div>
+
+<div class="controls"> <!-- Kontrol tambahan -->
+    <button id="addShapeBtn">Add Shape</button> <!-- Tombol untuk menambah bentuk -->
+    <button id="removeShapeBtn">Remove Shape</button> <!-- Tombol untuk menghapus bentuk -->
+</div>
+
+<div class="shapeControls"> <!-- Kontrol bentuk -->
+    <label for="shapeType">Shape:</label> <!-- Label untuk pilihan bentuk -->
+    <select id="shapeType"> <!-- Dropdown untuk memilih jenis bentuk -->
+        <option value="square">Square</option> <!-- Opsi bentuk kotak -->
+        <option value="circle">Circle</option> <!-- Opsi bentuk lingkaran -->
+        <option value="triangle">Triangle</option> <!-- Opsi bentuk segitiga -->
+    </select>
+
+    <label for="shapeColor">Color:</label> <!-- Label untuk pilihan warna -->
+    <input type="color" id="shapeColor" value="#ff0000"> <!-- Input untuk memilih warna -->
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Pustaka jQuery -->
+<script>
+    $(document).ready(function() { <!-- Ketika dokumen siap -->
+        let shapeCount = 0; /* Inisialisasi jumlah bentuk */
+        let addingShape = false; /* Status penambahan bentuk */
+        let removingShape = false; /* Status penghapusan bentuk */
+
+        function calculatePosition(shapeSize) { /* Fungsi untuk menghitung posisi */
+            const container = $('#shapeContainer'); /* Kontainer bentuk */
+            const containerWidth = container.width(); /* Lebar kontainer */
+            const containerHeight = container.height(); /* Tinggi kontainer */
+            const maxShapesPerRow = Math.floor(containerWidth / (shapeSize + 10)); /* Jumlah maksimum bentuk per baris */
+            const maxShapesPerColumn = Math.floor(containerHeight / (shapeSize + 10)); /* Jumlah maksimum bentuk per kolom */
+            const row = Math.floor(shapeCount / maxShapesPerRow); /* Baris bentuk */
+            const col = shapeCount % maxShapesPerRow; /* Kolom bentuk */
+
+            if (row < maxShapesPerColumn) { /* Jika masih ada ruang di kontainer */
+                return { /* Kembalikan posisi */
+                    top: row * (shapeSize + 10), /* Posisi atas */
+                    left: col * (shapeSize + 10) /* Posisi kiri */
+                };
+            } else {
+                return null; /* Jika tidak ada ruang, kembalikan null */
+            }
+        }
+
+        $('#addShapeBtn').click(async function() { /* Ketika tombol tambah bentuk diklik */
+            if (addingShape) return; /* Jika proses penambahan sedang berlangsung, hentikan */
+            addingShape = true; /* Set status penambahan sedang berlangsung */
+
+            const shapeType = $('#shapeType').val(); /* Ambil nilai jenis bentuk dari dropdown */
+            const shapeColor = $('#shapeColor').val(); /* Ambil nilai warna dari input warna */
+            const shapeSize = 50; /* Tetapkan ukuran bentuk */
+            let newShape;
+
+            if (shapeType === 'triangle') { /* Jika bentuk yang dipilih adalah segitiga */
+                newShape = $('<div></div>') /* Buat elemen div baru */
+                    .addClass('shape') /* Tambahkan kelas 'shape' */
+                    .addClass('triangle') /* Tambahkan kelas 'triangle' */
+                    .css({ /* Tetapkan gaya CSS */
+                        'border-bottom-color': shapeColor /* Warna border bawah */
+                    });
+            } else { /* Jika bentuknya bukan segitiga */
+                newShape = $('<div></div>') /* Buat elemen div baru */
+                    .addClass('shape') /* Tambahkan kelas 'shape' */
+                    .addClass(shapeType) /* Tambahkan kelas sesuai jenis bentuk (square/circle) */
+                    .css({ /* Tetapkan gaya CSS */
+                        'background-color': shapeColor, /* Warna latar belakang */
+                        'width': shapeSize + 'px', /* Lebar bentuk */
+                        'height': shapeSize + 'px' /* Tinggi bentuk */
+                    });
+            }
+
+            const position = calculatePosition(shapeSize); /* Hitung posisi bentuk baru */
+
+            if (position) { /* Jika posisi valid */
+                $('#shapeContainer').append(newShape); /* Tambahkan bentuk baru ke kontainer */
+                newShape.css({ /* Tetapkan posisi awal bentuk */
+                    left: 0,
+                    top: position.top
+                }).show().animate({ /* Tampilkan bentuk dan animasikan ke posisi akhir */
+                    left: position.left
+                }, 500, function() { /* Durasi animasi 500ms */
+                    shapeCount++; /* Tambah jumlah bentuk */
+                    addingShape = false; /* Selesai menambah bentuk */
+                });
+            } else {
+                addingShape = false; /* Selesai menambah bentuk jika tidak ada ruang */
+                alert('Container is full!'); /* Tampilkan pesan jika kontainer penuh */
+            }
+        });
+
+        $('#removeShapeBtn').click(async function() { /* Ketika tombol hapus bentuk diklik */
+            if (removingShape || shapeCount === 0) return; /* Jika proses penghapusan sedang berlangsung atau tidak ada bentuk, hentikan */
+            removingShape = true; /* Set status penghapusan sedang berlangsung */
+
+            const lastShape = $('#shapeContainer .shape').last(); /* Ambil bentuk terakhir dalam kontainer */
+            lastShape
+            lastShape.fadeOut(500, function() { /* Animasi menghilang selama 500ms */
+                lastShape.remove(); /* Hapus bentuk setelah animasi selesai */
+                shapeCount--; /* Kurangi jumlah bentuk */
+                removingShape = false; /* Selesai menghapus bentuk */
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
